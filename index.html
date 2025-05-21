@@ -97,9 +97,28 @@
             border: none;
         }
         
-        /* Custom styling for widget */
-        .custom-widget-styles {
-            display: none;
+        /* Loader styles */
+        .loader-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            flex-direction: column;
+        }
+        
+        .loader {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #0066cc;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
     </style>
 </head>
@@ -118,152 +137,92 @@
                 <h3 class="modal-title">1Build Product Catalog</h3>
                 <button class="close-btn" id="closeModalBtn">×</button>
             </div>
-            <div class="modal-body">
-                <iframe id="widgetFrame" class="widget-frame" src="about:blank"></iframe>
+            <div class="modal-body" id="modalBody">
+                <!-- Loader will be shown while widget loads -->
+                <div class="loader-container" id="loaderContainer">
+                    <div class="loader"></div>
+                    <p>Loading 1Build catalog...</p>
+                </div>
+                
+                <!-- Widget iframe will be inserted here -->
             </div>
         </div>
     </div>
-    
-    <!-- Style injection for hiding "Add to Project" button -->
-    <style class="custom-widget-styles" id="widgetCustomStyles">
-        /* This will be injected into the iframe */
-        button[aria-label="Add to Project"],
-        button:contains("Add to Project") {
-            display: none !important;
-        }
-    </style>
     
     <script>
         // Elements
         const openModalBtn = document.getElementById('openModalBtn');
         const closeModalBtn = document.getElementById('closeModalBtn');
         const modalOverlay = document.getElementById('modalOverlay');
-        const widgetFrame = document.getElementById('widgetFrame');
-        const widgetStyles = document.getElementById('widgetCustomStyles');
+        const modalBody = document.getElementById('modalBody');
+        const loaderContainer = document.getElementById('loaderContainer');
         
-        // Show modal with widget
+        // 1Build script already loaded flag
+        let oneBuildScriptLoaded = false;
+        
+        // Show modal and load widget
         openModalBtn.addEventListener('click', function() {
+            // Show modal
             modalOverlay.style.display = 'block';
             
-            // Create the widget content
-            const widgetContent = `
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <meta charset="UTF-8">
-                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                    <title>1Build Widget</title>
-                    <style>
-                        body { margin: 0; padding: 0; overflow: hidden; }
-                        
-                        /* Hide Add to Project button */
-                        button[aria-label="Add to Project"],
-                        [data-testid="add-to-project-button"] {
-                            display: none !important;
-                        }
-                    </style>
-                </head>
-                <body>
-                    <script src="https://cdn.1build.com/widget.js"><\/script>
-                    <script>
-                        window.onload = function() {
-                            if (window.onebuild) {
-                                window.onebuild.init({
-                                    key: "1build_emb.rZw252g8.0exOSkoCXcY1wuFJCcC84spIVVqKq8Us", // Your actual embedded API key
-                                    defaultFilters: {
-                                        categoryPath: ["Electrical", "Conduit"]
-                                    }
-                                });
-                                
-                                // Add listener to communicate with parent
-                                window.onebuild.on('sourceSelected', function(source) {
-                                    window.parent.postMessage({
-                                        type: '1buildProductSelected',
-                                        product: source
-                                    }, '*');
-                                });
-                                
-                                // Open the widget automatically
-                                setTimeout(function() {
-                                    window.onebuild.open();
-                                }, 500);
-                                
-                                // Try to add custom styles to hide the Add to Project button
-                                setTimeout(function() {
-                                    // Create a style element
-                                    var style = document.createElement('style');
-                                    style.textContent = \`
-                                        button[aria-label="Add to Project"],
-                                        [data-testid="add-to-project-button"],
-                                        button:has(span:contains("Add to Project")) {
-                                            display: none !important;
-                                            visibility: hidden !important;
-                                            opacity: 0 !important;
-                                            pointer-events: none !important;
-                                        }
-                                    \`;
-                                    document.head.appendChild(style);
-                                    
-                                    // Try to find and remove the button directly
-                                    setInterval(function() {
-                                        var buttons = document.querySelectorAll('button');
-                                        buttons.forEach(function(button) {
-                                            if (button.textContent.includes('Add to Project')) {
-                                                button.style.display = 'none';
-                                            }
-                                        });
-                                    }, 1000);
-                                }, 2000);
-                            } else {
-                                document.body.innerHTML = '<p style="padding: 20px; color: red;">1Build widget failed to load. Please try again.</p>';
-                            }
-                        };
-                    <\/script>
-                </body>
-                </html>
-            `;
+            // Create a direct iframe to 1build app - this is more reliable than trying to create our own widget
+            const iframeUrl = 'https://app.1build.com/widget?mode=embed&key=1build_emb.rZw252g8.0exOSkoCXcY1wuFJCcC84spIVVqKq8Us&category=Electrical/Conduit';
             
-            // Set iframe content
-            const frame = widgetFrame;
-            const frameDoc = frame.contentDocument || frame.contentWindow.document;
-            frameDoc.open();
-            frameDoc.write(widgetContent);
-            frameDoc.close();
+            // Create iframe element
+            const iframe = document.createElement('iframe');
+            iframe.className = 'widget-frame';
+            iframe.src = iframeUrl;
+            iframe.style.display = 'none'; // Hide initially until loaded
+            
+            // Add load event
+            iframe.onload = function() {
+                // Hide loader and show iframe
+                loaderContainer.style.display = 'none';
+                iframe.style.display = 'block';
+            };
+            
+            // Add error event
+            iframe.onerror = function() {
+                loaderContainer.innerHTML = '<p style="color: red;">Error loading 1Build catalog. Please try again later.</p>';
+            };
+            
+            // Add iframe to modal body
+            modalBody.appendChild(iframe);
         });
         
         // Close modal
         closeModalBtn.addEventListener('click', function() {
+            // Hide modal
             modalOverlay.style.display = 'none';
-            // Reset iframe
-            widgetFrame.src = 'about:blank';
+            
+            // Remove iframe to fully reset it
+            const iframes = modalBody.querySelectorAll('iframe');
+            iframes.forEach(iframe => iframe.remove());
+            
+            // Show loader again for next time
+            loaderContainer.style.display = 'flex';
         });
         
         // Close modal if clicking outside the content
         modalOverlay.addEventListener('click', function(e) {
             if (e.target === modalOverlay) {
-                modalOverlay.style.display = 'none';
-                // Reset iframe
-                widgetFrame.src = 'about:blank';
+                closeModalBtn.click();
             }
         });
         
-        // Listen for product selection from iframe
-        window.addEventListener('message', function(event) {
-            if (event.data && event.data.type === '1buildProductSelected') {
-                const product = event.data.product;
-                console.log('Selected product:', product);
-                
-                // You can process the selected product here
-                // For example, save it to localStorage or display it
-                // This would allow integration with Glide
-                
-                // Example: Store in localStorage for Glide to access
-                localStorage.setItem('selectedProduct', JSON.stringify(product));
-                
-                // Optionally close the modal after selection
-                // modalOverlay.style.display = 'none';
-            }
-        });
+        // Pre-load the 1build script
+        function preloadOneBuildScript() {
+            const script = document.createElement('script');
+            script.src = 'https://cdn.1build.com/widget.js';
+            script.onload = function() {
+                oneBuildScriptLoaded = true;
+                console.log('1Build script preloaded');
+            };
+            document.body.appendChild(script);
+        }
+        
+        // Preload the script for faster modal opening
+        preloadOneBuildScript();
     </script>
 </body>
 </html>
