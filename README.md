@@ -11,7 +11,7 @@ This repository contains a web implementation of the 1Build widget for embedding
 
 ## Setup
 
-1. Replace `YOUR_API_KEY` in the HTML files with your actual 1Build EMBEDDED API key
+1. Replace `1build_emb.rZw252g8.0exOSkoCXcY1wuFJCcC84spIVVqKq8Us` in the HTML files with your actual 1Build EMBEDDED API key
 2. Deploy to GitHub Pages
 3. Use the GitHub Pages URL in your Glide web embed component
 
