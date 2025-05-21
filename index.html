@@ -4,9 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>1Build Widget</title>
-    <!-- Add meta tags to help with embedding in Glide -->
-    <meta name="referrer" content="no-referrer">
-    <meta http-equiv="Content-Security-Policy" content="frame-ancestors *">
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -34,8 +31,14 @@
             background-color: #333333;
         }
         
+        button:disabled {
+            background-color: #333333;
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+        
+        /* Debug info - hidden by default but can be shown for debugging */
         #debug-info {
-            display: none;
             margin-top: 20px;
             padding: 10px;
             background-color: #f8f8f8;
@@ -43,89 +46,271 @@
             font-family: monospace;
             white-space: pre-wrap;
             font-size: 12px;
+            max-height: 150px;
+            overflow-y: auto;
+            display: none;
         }
     </style>
 </head>
 <body>
-    <!-- Just the button -->
+    <!-- Just the button, no title or text -->
     <button id="open-widget-btn">Open Catalogue</button>
     
-    <!-- Hidden debug info (can be unhidden for troubleshooting) -->
+    <!-- Debug info that can be toggled for troubleshooting -->
     <div id="debug-info"></div>
     
     <script>
+        // Elements
         const debugInfo = document.getElementById('debug-info');
         const openWidgetBtn = document.getElementById('open-widget-btn');
         
+        // Debug mode - set to true to show debug info
+        const DEBUG_MODE = false;
+        
+        // Logging function
         function log(message) {
             console.log(message);
-            debugInfo.textContent += message + '\n';
+            
+            if (DEBUG_MODE) {
+                debugInfo.style.display = 'block';
+                debugInfo.textContent += message + '\n';
+                debugInfo.scrollTop = debugInfo.scrollHeight;
+            }
         }
         
-        // Direct URL approach for Glide compatibility
+        // Hybrid approach that first tries the window.open, then falls back to widget script
         openWidgetBtn.addEventListener('click', function() {
-            // Use the direct widget URL with embedded key
-            const widgetUrl = 'https://app.1build.com/widget?key=1build_emb.rZw252g8.0exOSkoCXcY1wuFJCcC84spIVVqKq8Us&mode=embed&category=Electrical';
+            log("Button clicked, opening 1Build catalog...");
             
-            // Try multiple methods to open the URL for maximum compatibility
-            try {
-                // Method 1: window.open
-                const newWindow = window.open(widgetUrl, '_blank');
-                if (!newWindow) {
-                    // Method 2: location.href
-                    window.location.href = widgetUrl;
-                }
-            } catch (e) {
-                // Method 3: create and click an anchor element
-                const a = document.createElement('a');
-                a.href = widgetUrl;
-                a.target = '_blank';
-                a.rel = 'noopener noreferrer';
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
+            // Create and open a popup window immediately
+            const width = Math.min(1000, window.innerWidth - 40);
+            const height = Math.min(700, window.innerHeight - 60);
+            const left = (window.innerWidth - width) / 2;
+            const top = (window.innerHeight - height) / 2;
+            
+            // Open blank window first (this often bypasses popup blockers in iframe contexts)
+            const newWindow = window.open('about:blank', '_blank', `width=${width},height=${height},left=${left},top=${top}`);
+            
+            if (!newWindow) {
+                log("Popup blocked by browser. Please allow popups for this site.");
+                alert("Please allow popups for this site to view the 1Build catalog.");
+                return;
             }
+            
+            log("Popup window opened, loading content...");
+            
+            // Write content to the window
+            newWindow.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>1Build Catalog</title>
+                    <style>
+                        body {
+                            margin: 0;
+                            padding: 0;
+                            font-family: Arial, sans-serif;
+                            background-color: white;
+                        }
+                        
+                        .header {
+                            background-color: #000000;
+                            color: white;
+                            padding: 10px 15px;
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: center;
+                        }
+                        
+                        .close-btn {
+                            background: none;
+                            border: 1px solid white;
+                            color: white;
+                            padding: 5px 10px;
+                            font-size: 14px;
+                            cursor: pointer;
+                            border-radius: 4px;
+                        }
+                        
+                        .content {
+                            height: calc(100vh - 50px);
+                            display: flex;
+                            flex-direction: column;
+                            align-items: center;
+                            justify-content: center;
+                        }
+                        
+                        .spinner {
+                            border: 5px solid #f3f3f3;
+                            border-top: 5px solid #000;
+                            border-radius: 50%;
+                            width: 40px;
+                            height: 40px;
+                            animation: spin 1s linear infinite;
+                            margin-bottom: 20px;
+                        }
+                        
+                        @keyframes spin {
+                            0% { transform: rotate(0deg); }
+                            100% { transform: rotate(360deg); }
+                        }
+                        
+                        /* Hide Add to Project button */
+                        button[data-testid="add-to-project-button"],
+                        [data-testid="add-to-project-button"],
+                        [aria-label="Add to Project"],
+                        button.MuiButton-containedPrimary {
+                            display: none !important;
+                            visibility: hidden !important;
+                            opacity: 0 !important;
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <h3 style="margin: 0;">1Build Catalog</h3>
+                        <button class="close-btn" onclick="window.close()">Close</button>
+                    </div>
+                    
+                    <div class="content" id="content">
+                        <div class="spinner"></div>
+                        <p>Loading 1Build catalog...</p>
+                    </div>
+                    
+                    <script>
+                        // Console logging helper
+                        function log(msg) {
+                            console.log("1Build Widget: " + msg);
+                        }
+                        
+                        // Load the 1build widget script
+                        function loadWidgetScript() {
+                            log("Loading widget script...");
+                            
+                            const script = document.createElement('script');
+                            script.src = 'https://cdn.1build.com/widget.js';
+                            
+                            script.onload = function() {
+                                log("Widget script loaded successfully");
+                                initializeWidget();
+                            };
+                            
+                            script.onerror = function() {
+                                log("Error loading widget script");
+                                document.getElementById('content').innerHTML = '<p style="color: red;">Error loading 1Build catalog. Please try again later.</p>';
+                            };
+                            
+                            document.body.appendChild(script);
+                        }
+                        
+                        // Try to use a CORS proxy if direct load fails
+                        function loadWidgetScriptViaProxy() {
+                            log("Trying proxy for script loading...");
+                            
+                            const script = document.createElement('script');
+                            script.src = 'https://api.allorigins.win/raw?url=https://cdn.1build.com/widget.js';
+                            
+                            script.onload = function() {
+                                log("Widget script loaded via proxy");
+                                initializeWidget();
+                            };
+                            
+                            script.onerror = function() {
+                                log("Error loading widget script via proxy");
+                                document.getElementById('content').innerHTML = '<p style="color: red;">Error loading 1Build catalog. Please try again later.</p>';
+                            };
+                            
+                            document.body.appendChild(script);
+                        }
+                        
+                        // Initialize the widget
+                        function initializeWidget() {
+                            log("Initializing widget...");
+                            
+                            if (typeof window.onebuild === 'undefined') {
+                                log("onebuild object not found");
+                                setTimeout(function() {
+                                    if (typeof window.onebuild === 'undefined') {
+                                        loadWidgetScriptViaProxy();
+                                    } else {
+                                        setupWidget();
+                                    }
+                                }, 1000);
+                                return;
+                            }
+                            
+                            setupWidget();
+                        }
+                        
+                        // Set up and open the widget
+                        function setupWidget() {
+                            try {
+                                // Initialize with API key
+                                window.onebuild.init({
+                                    key: "1build_emb.rZw252g8.0exOSkoCXcY1wuFJCcC84spIVVqKq8Us"
+                                });
+                                
+                                log("Widget initialized with API key");
+                                
+                                // Hide the loading spinner
+                                document.getElementById('content').style.display = 'none';
+                                
+                                // Open the widget
+                                window.onebuild.open({
+                                    defaultFilters: {
+                                        categoryPath: ["Electrical"]
+                                    }
+                                });
+                                
+                                // Try to hide the Add to Project button
+                                setTimeout(function() {
+                                    const style = document.createElement('style');
+                                    style.textContent = \`
+                                        button[data-testid="add-to-project-button"],
+                                        [data-testid="add-to-project-button"],
+                                        [aria-label="Add to Project"],
+                                        button.MuiButton-containedPrimary,
+                                        [data-testid="button-add-to-project"] {
+                                            display: none !important;
+                                            visibility: hidden !important;
+                                            opacity: 0 !important;
+                                        }
+                                    \`;
+                                    document.head.appendChild(style);
+                                    
+                                    // Also find buttons by text
+                                    setInterval(function() {
+                                        document.querySelectorAll('button').forEach(function(button) {
+                                            if (button.textContent.includes('Add to Project')) {
+                                                button.style.display = 'none';
+                                            }
+                                        });
+                                    }, 1000);
+                                }, 2000);
+                                
+                            } catch (err) {
+                                log("Error setting up widget: " + err.message);
+                                document.getElementById('content').innerHTML = '<p style="color: red;">Error initializing catalog. Please try again later.</p>';
+                            }
+                        }
+                        
+                        // Start loading the widget script
+                        loadWidgetScript();
+                    <\/script>
+                </body>
+                </html>
+            `);
+            
+            // Close the document to finish writing
+            newWindow.document.close();
+            
+            log("Content written to popup window");
         });
         
-        // Alternative approach for Glide using postMessage
-        function setupPostMessageHandler() {
-            window.addEventListener('message', function(event) {
-                // Listen for messages from parent (Glide)
-                if (event.data === 'open1BuildWidget') {
-                    openWidgetBtn.click();
-                }
-            });
-            
-            // Inform parent when ready
-            if (window.parent !== window) {
-                try {
-                    window.parent.postMessage('1buildWidgetReady', '*');
-                } catch (e) {
-                    console.error('Failed to send ready message:', e);
-                }
-            }
-        }
-        
-        // Init function with Glide compatibility focus
-        function init() {
-            // Enable debug mode for troubleshooting in Glide
-            if (window.location.href.includes('glide.page')) {
-                debugInfo.style.display = 'block';
-                log('Running in Glide environment');
-            }
-            
-            // Set up post message handler for Glide
-            setupPostMessageHandler();
-            
-            // Make button active
-            openWidgetBtn.disabled = false;
-            
-            // Log ready state
-            log('Widget button ready');
-        }
-        
-        // Initialize immediately
-        init();
+        // Initialize button
+        log("Button initialized and ready to open 1Build catalog");
     </script>
 </body>
 </html>
