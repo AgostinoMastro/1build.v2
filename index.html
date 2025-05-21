@@ -44,11 +44,10 @@
         #debug-info {
             margin-top: 20px;
             padding: 10px;
-            background-color: #f0f0f0;
+            background-color: #f8f8f8;
             border: 1px solid #ddd;
             font-family: monospace;
             white-space: pre-wrap;
-            display: none;
         }
     </style>
 </head>
@@ -57,118 +56,92 @@
         <h1>1Build Electrical Products</h1>
         <p>Browse electrical conduit products and pricing from 1Build</p>
         
-        <button id="open-widget-btn">Open 1Build Catalog</button>
+        <button id="open-widget-btn" disabled>Open 1Build Catalog</button>
         
         <div id="debug-info"></div>
-        <div id="product-details"></div>
     </div>
-    
-    <!-- 1Build widget script -->
-    <script src="https://cdn.1build.com/widget.js"></script>
     
     <script>
         // Debug helper
         const debugInfo = document.getElementById('debug-info');
+        const openWidgetBtn = document.getElementById('open-widget-btn');
+        
         function log(message) {
             console.log(message);
-            debugInfo.style.display = 'block';
             debugInfo.textContent += message + '\n';
         }
         
-        // Check if script loaded
-        if (typeof window.onebuild === 'undefined') {
-            log('1Build widget script did not load properly. Trying to reload...');
+        log('Starting 1Build widget initialization...');
+        
+        // Ensure the script is properly loaded with retry mechanism
+        function loadScript(src, callback, errorCallback) {
             const script = document.createElement('script');
-            script.src = 'https://cdn.1build.com/widget.js';
-            script.onload = initializeWidget;
-            script.onerror = () => log('Failed to load 1Build widget script');
-            document.body.appendChild(script);
-        } else {
-            log('1Build widget script loaded');
-            initializeWidget();
+            script.src = src;
+            
+            script.onload = callback;
+            script.onerror = errorCallback;
+            
+            document.head.appendChild(script);
+            return script;
         }
         
         function initializeWidget() {
-            try {
-                log('Initializing 1Build widget...');
-                
-                window.onebuild.init({
-                    key: "1build_emb.rZw252g8.0exOSkoCXcY1wuFJCcC84spIVVqKq8Us", // Replace with your actual 1build EMBEDDED API key
-                    onLoad: function() {
-                        log('Widget initialized successfully');
-                    },
-                    onError: function(error) {
-                        log('Widget initialization error: ' + JSON.stringify(error));
-                    }
-                });
-                
-                // Setup button click
-                const openWidgetBtn = document.getElementById('open-widget-btn');
-                openWidgetBtn.addEventListener('click', function() {
-                    log('Button clicked, opening widget...');
+            log('Script loaded, waiting for onebuild to be defined...');
+            
+            // Check if onebuild is defined yet
+            const checkInterval = setInterval(function() {
+                if (window.onebuild) {
+                    clearInterval(checkInterval);
+                    log('onebuild is now defined, initializing...');
+                    
                     try {
-                        window.onebuild.open();
+                        window.onebuild.init({
+                            key: "YOUR_API_KEY" // Replace with your actual 1build EMBEDDED API key
+                        });
+                        
+                        log('Widget initialized successfully');
+                        openWidgetBtn.disabled = false;
+                        
+                        // Setup button click handler
+                        openWidgetBtn.addEventListener('click', function() {
+                            log('Button clicked, opening widget...');
+                            window.onebuild.open();
+                        });
+                        
                     } catch (err) {
-                        log('Error opening widget: ' + err.message);
+                        log('Error initializing widget: ' + err.message);
                     }
-                });
-                
-                // Listen for events
-                window.onebuild.on('sourceSelected', function(source) {
-                    log('Product selected: ' + source.name);
-                    displayProductDetails(source);
-                });
-                
-                window.onebuild.on('close', function() {
-                    log('Widget closed');
-                });
-                
-            } catch (err) {
-                log('Error in initialization: ' + err.message);
-            }
+                }
+            }, 100);
+            
+            // Timeout after 10 seconds
+            setTimeout(function() {
+                clearInterval(checkInterval);
+                if (!window.onebuild) {
+                    log('Timed out waiting for onebuild to be defined. Script may be blocked by browser settings or network issues.');
+                }
+            }, 10000);
         }
         
-        // Display selected product details
-        function displayProductDetails(product) {
-            const detailsContainer = document.getElementById('product-details');
-            
-            // Create a product card
-            const card = document.createElement('div');
-            card.style.marginBottom = '20px';
-            card.style.padding = '15px';
-            card.style.border = '1px solid #ddd';
-            card.style.borderRadius = '4px';
-            
-            try {
-                // Format money values
-                const materialCost = (product.materialRateUsdCents / 100).toFixed(2);
-                const laborCost = (product.laborRateUsdCents / 100).toFixed(2);
-                const totalCost = (product.calculatedUnitRateUsdCents / 100).toFixed(2);
-                
-                // Create product card content
-                card.innerHTML = `
-                    <div style="font-weight: bold; font-size: 18px; margin-bottom: 10px;">${product.name}</div>
-                    <div style="display: grid; grid-template-columns: 120px 1fr; gap: 5px;">
-                        <span style="font-weight: bold;">ID:</span> <span>${product.id}</span>
-                        <span style="font-weight: bold;">Type:</span> <span>${product.sourceType}</span>
-                        <span style="font-weight: bold;">Unit:</span> <span>${product.uom}</span>
-                        <span style="font-weight: bold;">Material Cost:</span> <span>$${materialCost}</span>
-                        <span style="font-weight: bold;">Labor Cost:</span> <span>$${laborCost}</span>
-                        <span style="font-weight: bold;">Total Cost:</span> <span>$${totalCost}</span>
-                        <span style="font-weight: bold;">Category:</span> <span>${product.categoryPath ? product.categoryPath.join(' > ') : 'N/A'}</span>
-                    </div>
-                    <div style="margin-top: 10px;">
-                        <p>${product.description || 'No description available'}</p>
-                    </div>
-                `;
-            } catch (err) {
-                card.textContent = 'Error displaying product: ' + err.message;
-                log('Error in displayProductDetails: ' + err.message);
+        // Try to load the script
+        log('Loading 1Build widget script...');
+        loadScript(
+            'https://cdn.1build.com/widget.js',
+            initializeWidget,
+            function() {
+                log('Failed to load script. Retrying...');
+                // Retry once
+                setTimeout(function() {
+                    loadScript(
+                        'https://cdn.1build.com/widget.js',
+                        initializeWidget,
+                        function() {
+                            log('Failed to load script after retry. Please check your network connection and browser settings.');
+                        }
+                    );
+                }, 2000);
             }
-            
-            // Add to the container
-            detailsContainer.appendChild(card);
-        }
+        );
     </script>
 </body>
 </html>
