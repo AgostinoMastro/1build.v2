@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>1Build Products Catalog</title>
+    <link rel="stylesheet" href="styles.css">
+    
+    <!-- Initialize and auto-open 1build widget -->
+    <script type="text/javascript">
+        function initWidget() {
+            window.onebuild.init({
+                key: "YOUR_API_KEY"  // Replace with your actual 1build EMBEDDED API key
+            });
+            
+            // Automatically open the widget when page loads
+            setTimeout(function() {
+                window.onebuild.open();
+            }, 1000);
+        }
+    </script>
+</head>
+<body onload="initWidget()">
+    <div class="container">
+        <h1>1Build Construction Products</h1>
+        <p>Browse all construction products and pricing from 1Build</p>
+        
+        <!-- Open widget button (as a backup) -->
+        <button onclick="window.onebuild.open()">Open Catalog</button>
+        
+        <!-- Container for displaying selected product details -->
+        <div id="product-details"></div>
+    </div>
+    
+    <!-- 1Build widget script -->
+    <script src="https://cdn.1build.com/widget.js" async defer></script>
+    
+    <!-- Custom scripts for handling product selection -->
+    <script src="script.js"></script>
+</body>
+</html>
