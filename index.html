@@ -21,6 +21,11 @@
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
         
+        h1 {
+            color: #333;
+            margin-top: 0;
+        }
+        
         button {
             background-color: #0066cc;
             color: white;
@@ -29,6 +34,23 @@
             border-radius: 4px;
             cursor: pointer;
             font-size: 16px;
+            margin: 20px 0;
+        }
+        
+        button:hover {
+            background-color: #0055aa;
+        }
+        
+        #debug-info {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #f8f8f8;
+            border: 1px solid #ddd;
+            font-family: monospace;
+            white-space: pre-wrap;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
         }
     </style>
 </head>
@@ -37,53 +59,115 @@
         <h1>1Build Electrical Products</h1>
         <p>Browse electrical conduit products and pricing from 1Build</p>
         
-        <button onclick="openInFullWindow()">Open 1Build Catalog</button>
+        <button id="open-widget-btn">Open 1Build Catalog</button>
+        
+        <div id="debug-info"></div>
     </div>
     
+    <script src="https://cdn.1build.com/widget.js"></script>
     <script>
-        // This function will open a new full window with the widget
-        function openInFullWindow() {
-            // Create a new window
-            const newWindow = window.open('', '_blank', 'width=1000,height=800');
-            
-            // Write the content to the new window
-            newWindow.document.write(`
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <meta charset="UTF-8">
-                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                    <title>1Build Widget</title>
-                    <style>
-                        body { margin: 0; padding: 0; font-family: Arial, sans-serif; }
-                        .close-btn { position: fixed; top: 10px; right: 10px; background: #333; color: white; border: none; padding: 5px 10px; cursor: pointer; border-radius: 4px; }
-                    </style>
-                </head>
-                <body>
-                    <button class="close-btn" onclick="window.close()">Close</button>
-                    
-                    <script src="https://cdn.1build.com/widget.js"><\/script>
-                    <script>
-                        // Initialize and open the widget
-                        window.onload = function() {
-                            if (window.onebuild) {
-                                window.onebuild.init({
-                                    key: "1build_emb.rZw252g8.0exOSkoCXcY1wuFJCcC84spIVVqKq8Us" // Your embedded API key
-                                });
-                                
-                                setTimeout(function() {
-                                    window.onebuild.open();
-                                }, 500);
-                            } else {
-                                alert("1Build widget failed to load");
-                            }
-                        };
-                    <\/script>
-                </body>
-                </html>
-            `);
-            newWindow.document.close();
+        const debugInfo = document.getElementById('debug-info');
+        const openWidgetBtn = document.getElementById('open-widget-btn');
+        
+        function log(message) {
+            console.log(message);
+            debugInfo.innerHTML += message + '<br>';
+            debugInfo.scrollTop = debugInfo.scrollHeight;
         }
+        
+        // Fix for iframe-related issues in Glide
+        function setupIframeSupport() {
+            log("Setting up iframe support...");
+            
+            // Listen for messages from the parent window (Glide)
+            window.addEventListener('message', function(event) {
+                if (event.data === 'open1BuildWidget') {
+                    log("Received open widget message from parent");
+                    if (window.onebuild) {
+                        window.onebuild.open();
+                    }
+                }
+            });
+            
+            // Inform parent when we're ready
+            try {
+                window.parent.postMessage('1buildWidgetReady', '*');
+                log("Sent ready message to parent");
+            } catch (e) {
+                log("Could not send message to parent: " + e.message);
+            }
+        }
+        
+        // Initialize the widget
+        function initializeWidget() {
+            log("Initializing 1Build widget...");
+            
+            try {
+                window.onebuild.init({
+                    key: "1build_emb.rZw252g8.0exOSkoCXcY1wuFJCcC84spIVVqKq8Us", // Your embedded API key
+                    onLoad: function() {
+                        log("Widget initialized successfully!");
+                        openWidgetBtn.disabled = false;
+                    },
+                    onError: function(error) {
+                        log("Widget initialization error: " + JSON.stringify(error));
+                    }
+                });
+                
+                // Setup button click handler
+                openWidgetBtn.addEventListener('click', function() {
+                    log("Button clicked, opening widget...");
+                    try {
+                        window.onebuild.open();
+                    } catch (err) {
+                        log("Error opening widget: " + err.message);
+                    }
+                });
+                
+                // Listen for product selection
+                window.onebuild.on('sourceSelected', function(source) {
+                    log("Product selected: " + source.name);
+                });
+                
+                setupIframeSupport();
+                
+            } catch (err) {
+                log("Error in initialization: " + err.message);
+            }
+        }
+        
+        // Check if script has loaded
+        if (typeof window.onebuild !== 'undefined') {
+            log("Widget script loaded, initializing...");
+            initializeWidget();
+        } else {
+            log("Widget script not loaded yet, waiting...");
+            
+            // Retry initialization after a delay
+            setTimeout(function() {
+                if (typeof window.onebuild !== 'undefined') {
+                    log("Widget script now available");
+                    initializeWidget();
+                } else {
+                    log("Widget script still not available after delay");
+                    
+                    // Load script again as fallback
+                    const script = document.createElement('script');
+                    script.src = 'https://cdn.1build.com/widget.js';
+                    script.onload = function() {
+                        log("Script loaded via fallback");
+                        initializeWidget();
+                    };
+                    document.body.appendChild(script);
+                }
+            }, 1000);
+        }
+        
+        // Fix for some iframe popup blockers
+        document.addEventListener('click', function() {
+            // This helps with popup blockers in some browsers
+            document.body.focus();
+        });
     </script>
 </body>
 </html>
