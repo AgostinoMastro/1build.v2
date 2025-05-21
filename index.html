@@ -19,7 +19,6 @@
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            text-align: center;
         }
         
         h1 {
@@ -27,20 +26,48 @@
             margin-top: 0;
         }
         
-        .button {
+        button {
             background-color: #0066cc;
             color: white;
             border: none;
-            padding: 12px 20px;
+            padding: 10px 15px;
             border-radius: 4px;
             cursor: pointer;
             font-size: 16px;
             margin: 20px 0;
-            min-width: 200px;
         }
         
-        .button:hover {
+        button:hover {
             background-color: #0055aa;
+        }
+        
+        /* Hide debug info by default */
+        #debug-info {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #f8f8f8;
+            border: 1px solid #ddd;
+            font-family: monospace;
+            white-space: pre-wrap;
+            display: none;
+        }
+        
+        /* CSS for hiding Add to Project button in the widget */
+        .button-hider {
+            display: none;
+        }
+    </style>
+    
+    <!-- Inline styles that will target the widget's Add to Project button -->
+    <style id="button-hider-styles">
+        /* These styles will be applied to the entire document including iframes */
+        button[data-testid="add-to-project-button"],
+        button[aria-label="Add to Project"],
+        [data-testid="button-add-to-project"] {
+            display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
         }
     </style>
 </head>
@@ -49,221 +76,141 @@
         <h1>1Build Electrical Products</h1>
         <p>Browse electrical conduit products and pricing from 1Build</p>
         
-        <button class="button" onclick="openWidgetWindow()">Open 1Build Catalog</button>
+        <button id="open-widget-btn" disabled>Loading widget...</button>
+        
+        <div id="debug-info"></div>
     </div>
     
+    <!-- Load the 1Build widget script directly -->
+    <script src="https://cdn.1build.com/widget.js"></script>
+    
     <script>
-        // Function to open a new window with the widget
-        function openWidgetWindow() {
-            // Calculate window size that matches the container
-            const width = Math.min(800, window.innerWidth - 40);
-            const height = Math.min(600, window.innerHeight - 60);
+        // Elements
+        const debugInfo = document.getElementById('debug-info');
+        const openWidgetBtn = document.getElementById('open-widget-btn');
+        
+        // Enable debugging if needed (set to true to show debug info)
+        const DEBUG_ENABLED = false;
+        
+        // Logging function
+        function log(message) {
+            console.log(message);
+            if (DEBUG_ENABLED) {
+                debugInfo.style.display = 'block';
+                debugInfo.textContent += message + '\n';
+            }
+        }
+        
+        log("Starting widget initialization...");
+        
+        // Function to inject CSS to hide the Add to Project button
+        function injectButtonHiderCSS() {
+            try {
+                // This is a more aggressive approach to hide the button
+                // Create a style element
+                const style = document.createElement('style');
+                style.textContent = `
+                    /* Hide by various selectors */
+                    button[data-testid="add-to-project-button"],
+                    button[aria-label="Add to Project"],
+                    [data-testid="button-add-to-project"],
+                    button.MuiButton-containedPrimary,
+                    button:has(span:contains("Add to Project")),
+                    button:has(span:contains("project")) {
+                        display: none !important;
+                        visibility: hidden !important;
+                        opacity: 0 !important;
+                        pointer-events: none !important;
+                    }
+                `;
+                document.head.appendChild(style);
+                log("Injected button hiding CSS");
+                
+                // Find and hide buttons by text content
+                setInterval(function() {
+                    try {
+                        const buttons = document.querySelectorAll('button');
+                        buttons.forEach(function(button) {
+                            if (button.textContent.includes('Add to Project') || 
+                                button.textContent.toLowerCase().includes('project')) {
+                                button.style.display = 'none';
+                                button.style.visibility = 'hidden';
+                            }
+                        });
+                    } catch (e) {
+                        // Ignore errors
+                    }
+                }, 500);
+            } catch (e) {
+                log("Error injecting button hiding CSS: " + e.message);
+            }
+        }
+        
+        // Function to initialize the widget
+        function initializeWidget() {
+            log("Checking for onebuild object...");
             
-            // Calculate position for center of screen
-            const left = (window.innerWidth - width) / 2;
-            const top = (window.innerHeight - height) / 2;
-            
-            // Create window features string
-            const features = `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`;
-            
-            // Open new window
-            const newWindow = window.open('', '1BuildWidget', features);
-            
-            // Write content to the new window
-            newWindow.document.write(`
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <meta charset="UTF-8">
-                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                    <title>1Build Product Catalog</title>
-                    <style>
-                        body {
-                            margin: 0;
-                            padding: 0;
-                            overflow: hidden;
-                            font-family: Arial, sans-serif;
+            // Check if onebuild object is defined
+            if (typeof window.onebuild !== 'undefined') {
+                log("onebuild object found, initializing...");
+                
+                try {
+                    // Initialize the widget with API key
+                    window.onebuild.init({
+                        key: "1build_emb.rZw252g8.0exOSkoCXcY1wuFJCcC84spIVVqKq8Us",
+                        // Add category filter to navigate directly to electrical conduits
+                        defaultFilters: {
+                            categoryPath: ["Electrical", "Conduit"]
+                        },
+                        onLoad: function() {
+                            log("Widget initialized successfully!");
+                            openWidgetBtn.disabled = false;
+                            openWidgetBtn.textContent = "Open 1Build Catalog";
+                            
+                            // Inject CSS to hide the Add to Project button
+                            injectButtonHiderCSS();
+                        },
+                        onError: function(error) {
+                            log("Widget initialization error: " + JSON.stringify(error));
+                            openWidgetBtn.textContent = "Widget Error";
                         }
-                        
-                        .header {
-                            display: flex;
-                            justify-content: space-between;
-                            align-items: center;
-                            padding: 10px 15px;
-                            background-color: #f5f5f5;
-                            border-bottom: 1px solid #ddd;
-                        }
-                        
-                        .title {
-                            font-weight: bold;
-                            margin: 0;
-                        }
-                        
-                        .close-btn {
-                            background: #0066cc;
-                            color: white;
-                            border: none;
-                            padding: 5px 10px;
-                            border-radius: 4px;
-                            cursor: pointer;
-                        }
-                        
-                        .content {
-                            height: calc(100vh - 50px);
-                            position: relative;
-                        }
-                        
-                        .loader {
-                            position: absolute;
-                            top: 50%;
-                            left: 50%;
-                            transform: translate(-50%, -50%);
-                            text-align: center;
-                        }
-                        
-                        .spinner {
-                            border: 5px solid #f3f3f3;
-                            border-top: 5px solid #0066cc;
-                            border-radius: 50%;
-                            width: 40px;
-                            height: 40px;
-                            animation: spin 1s linear infinite;
-                            margin: 0 auto 15px;
-                        }
-                        
-                        @keyframes spin {
-                            0% { transform: rotate(0deg); }
-                            100% { transform: rotate(360deg); }
-                        }
-                        
-                        /* Hide Add to Project button */
-                        button[data-testid="add-to-project-button"],
-                        button[aria-label="Add to Project"],
-                        button:has(span:contains("Add to Project")),
-                        [data-testid="button-add-to-project"] {
-                            display: none !important;
-                            visibility: hidden !important;
-                            opacity: 0 !important;
-                            pointer-events: none !important;
-                        }
-                    </style>
+                    });
                     
-                    <!-- Add additional dynamic style to hide the button once the DOM loads -->
-                    <script>
-                        // Function to add CSS to hide the button
-                        function addButtonHidingCSS() {
-                            const style = document.createElement('style');
-                            style.textContent = \`
-                                /* Target various possible button selectors */
-                                button[data-testid="add-to-project-button"],
-                                button[aria-label="Add to Project"],
-                                [data-testid="button-add-to-project"],
-                                button.MuiButton-containedPrimary {
-                                    display: none !important;
-                                    visibility: hidden !important;
-                                }
-                                
-                                /* Try to find by text content */
-                                button:has(span:contains("Add to Project")),
-                                button:has(span:contains("project")) {
-                                    display: none !important;
-                                }
-                            \`;
-                            document.head.appendChild(style);
-                        }
-                        
-                        // Apply CSS when DOM loads
-                        document.addEventListener('DOMContentLoaded', addButtonHidingCSS);
-                        
-                        // Also run periodically to catch dynamically added elements
-                        setInterval(function() {
-                            // Find buttons with text "Add to Project"
-                            document.querySelectorAll('button').forEach(function(button) {
-                                if (button.textContent.includes('Add to Project') || 
-                                    button.textContent.includes('project')) {
-                                    button.style.display = 'none';
+                    // Setup button click handler
+                    openWidgetBtn.addEventListener('click', function() {
+                        log("Opening widget...");
+                        try {
+                            // Open the widget with custom options
+                            window.onebuild.open({
+                                onOpen: function() {
+                                    log("Widget opened successfully!");
+                                    // Try again to hide the Add to Project button
+                                    injectButtonHiderCSS();
                                 }
                             });
-                        }, 1000);
-                    <\/script>
-                </head>
-                <body>
-                    <div class="header">
-                        <h2 class="title">1Build Electrical Products</h2>
-                        <button class="close-btn" onclick="window.close()">Close</button>
-                    </div>
-                    
-                    <div class="content">
-                        <div class="loader" id="loader">
-                            <div class="spinner"></div>
-                            <p>Loading 1Build catalog...</p>
-                        </div>
-                    </div>
-                    
-                    <script src="https://cdn.1build.com/widget.js"><\/script>
-                    <script>
-                        // Hide loader when widget is initialized
-                        function hideLoader() {
-                            document.getElementById('loader').style.display = 'none';
+                        } catch (err) {
+                            log("Error opening widget: " + err.message);
                         }
-                        
-                        // Initialize and open widget when page loads
-                        window.onload = function() {
-                            if (typeof window.onebuild !== 'undefined') {
-                                try {
-                                    window.onebuild.init({
-                                        key: "1build_emb.rZw252g8.0exOSkoCXcY1wuFJCcC84spIVVqKq8Us",
-                                        onLoad: function() {
-                                            console.log('Widget initialized');
-                                            
-                                            // Open widget with parameters
-                                            window.onebuild.open({
-                                                containerSelector: '.content',
-                                                defaultFilters: {
-                                                    categoryPath: ["Electrical", "Conduit"]
-                                                },
-                                                onOpen: hideLoader,
-                                                onError: function(error) {
-                                                    console.error('Widget error:', error);
-                                                    document.getElementById('loader').innerHTML = 
-                                                        '<p style="color: red;">Error loading catalog. Please try again.</p>';
-                                                }
-                                            });
-                                            
-                                            // Try to hide Add to Project button
-                                            setTimeout(function() {
-                                                // Apply CSS to hide the button
-                                                const style = document.createElement('style');
-                                                style.textContent = \`
-                                                    button[data-testid="add-to-project-button"],
-                                                    button[aria-label="Add to Project"],
-                                                    button:has(span:contains("Add to Project")) {
-                                                        display: none !important;
-                                                    }
-                                                \`;
-                                                document.head.appendChild(style);
-                                            }, 2000);
-                                        }
-                                    });
-                                } catch (err) {
-                                    console.error('Error initializing widget:', err);
-                                    document.getElementById('loader').innerHTML = 
-                                        '<p style="color: red;">Error loading catalog. Please try again.</p>';
-                                }
-                            } else {
-                                console.error('onebuild not defined');
-                                document.getElementById('loader').innerHTML = 
-                                    '<p style="color: red;">Error loading catalog. Please try again.</p>';
-                            }
-                        };
-                    <\/script>
-                </body>
-                </html>
-            `);
-            
-            // Close the document to finish writing
-            newWindow.document.close();
+                    });
+                    
+                } catch (err) {
+                    log("Error in initialization: " + err.message);
+                    openWidgetBtn.disabled = false;
+                    openWidgetBtn.textContent = "Widget Error";
+                }
+            } else {
+                log("onebuild object not found, retrying in 1 second...");
+                
+                // Retry after a delay
+                setTimeout(initializeWidget, 1000);
+            }
         }
+        
+        // Start initialization when page loads
+        window.addEventListener('load', function() {
+            log("Page loaded, starting initialization...");
+            setTimeout(initializeWidget, 500);
+        });
     </script>
 </body>
 </html>
