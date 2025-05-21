@@ -8,19 +8,23 @@
         body {
             font-family: Arial, sans-serif;
             margin: 0;
-            padding: 0;
-            background-color: transparent;
+            padding: 20px;
+            background-color: #f5f5f5;
         }
         
         .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: white;
             padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
             text-align: center;
         }
         
         h1 {
             color: #333;
             margin-top: 0;
-            font-size: 24px;
         }
         
         .button {
@@ -31,102 +35,12 @@
             border-radius: 4px;
             cursor: pointer;
             font-size: 16px;
-            margin: 10px 0;
-            width: 100%;
-            max-width: 300px;
+            margin: 20px 0;
+            min-width: 200px;
         }
         
         .button:hover {
             background-color: #0055aa;
-        }
-        
-        /* Modal overlay styles */
-        .modal-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: rgba(0, 0, 0, 0.7);
-            z-index: 1000;
-        }
-        
-        .modal-content {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 90%;
-            height: 90%;
-            background-color: white;
-            border-radius: 8px;
-            overflow: hidden;
-        }
-        
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 15px;
-            background-color: #f5f5f5;
-            border-bottom: 1px solid #ddd;
-            z-index: 10;
-            position: relative;
-        }
-        
-        .modal-title {
-            font-weight: bold;
-            margin: 0;
-        }
-        
-        .close-btn {
-            background: none;
-            border: none;
-            font-size: 20px;
-            cursor: pointer;
-            color: #555;
-        }
-        
-        .modal-body {
-            height: calc(100% - 50px);
-            position: relative;
-        }
-        
-        #debug-info {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: rgba(0, 0, 0, 0.7);
-            color: white;
-            padding: 5px 10px;
-            font-family: monospace;
-            font-size: 12px;
-            max-height: 100px;
-            overflow-y: auto;
-            display: none;
-        }
-        
-        /* Loader */
-        .loader {
-            border: 5px solid #f3f3f3;
-            border-radius: 50%;
-            border-top: 5px solid #0066cc;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            margin-top: -20px;
-            margin-left: -20px;
-            z-index: 5;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
         }
     </style>
 </head>
@@ -135,156 +49,221 @@
         <h1>1Build Electrical Products</h1>
         <p>Browse electrical conduit products and pricing from 1Build</p>
         
-        <button class="button" id="open-widget-btn">Open 1Build Catalog</button>
+        <button class="button" onclick="openWidgetWindow()">Open 1Build Catalog</button>
     </div>
-    
-    <!-- Modal Overlay -->
-    <div class="modal-overlay" id="modalOverlay">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title">1Build Product Catalog</h3>
-                <button class="close-btn" id="closeModalBtn">×</button>
-            </div>
-            <div class="modal-body">
-                <!-- Loader will show while widget initializes -->
-                <div id="loader" class="loader"></div>
-                <!-- Widget will be initialized in this div -->
-                <div id="widget-container" style="width: 100%; height: 100%;"></div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Debug info panel (hidden by default) -->
-    <div id="debug-info"></div>
-    
-    <!-- Load the 1build widget script -->
-    <script src="https://cdn.1build.com/widget.js"></script>
     
     <script>
-        // Function to log debug info
-        function log(message) {
-            console.log(message);
-            const debugInfo = document.getElementById('debug-info');
-            debugInfo.style.display = 'block';
-            debugInfo.innerHTML += message + '<br>';
-            debugInfo.scrollTop = debugInfo.scrollHeight;
-        }
-        
-        // Elements
-        const openWidgetBtn = document.getElementById('open-widget-btn');
-        const closeModalBtn = document.getElementById('closeModalBtn');
-        const modalOverlay = document.getElementById('modalOverlay');
-        const loader = document.getElementById('loader');
-        
-        // Check if widget script loaded
-        if (typeof window.onebuild === 'undefined') {
-            log('1Build script not loaded properly. Attempting to reload...');
+        // Function to open a new window with the widget
+        function openWidgetWindow() {
+            // Calculate window size that matches the container
+            const width = Math.min(800, window.innerWidth - 40);
+            const height = Math.min(600, window.innerHeight - 60);
             
-            // Try to load the script again
-            const script = document.createElement('script');
-            script.src = 'https://cdn.1build.com/widget.js';
-            document.body.appendChild(script);
+            // Calculate position for center of screen
+            const left = (window.innerWidth - width) / 2;
+            const top = (window.innerHeight - height) / 2;
             
-            // Wait for script to load
-            script.onload = function() {
-                log('Script loaded successfully via fallback');
-                initializeWidget();
-            };
-        } else {
-            log('1Build script loaded successfully');
-            initializeWidget();
-        }
-        
-        // Initialize the widget
-        function initializeWidget() {
-            try {
-                // Initialize the widget with your API key
-                window.onebuild.init({
-                    key: "1build_emb.rZw252g8.0exOSkoCXcY1wuFJCcC84spIVVqKq8Us",
-                    onLoad: function() {
-                        log('Widget initialized successfully');
-                        openWidgetBtn.disabled = false;
-                    },
-                    onError: function(error) {
-                        log('Widget initialization error: ' + JSON.stringify(error));
-                    }
-                });
-                
-                log('Widget initialized with API key');
-            } catch (err) {
-                log('Error initializing widget: ' + err.message);
-            }
-        }
-        
-        // Open widget when button is clicked
-        openWidgetBtn.addEventListener('click', function() {
-            modalOverlay.style.display = 'block';
-            loader.style.display = 'block';
+            // Create window features string
+            const features = `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`;
             
-            try {
-                // Make sure widget is initialized
-                if (typeof window.onebuild !== 'undefined') {
-                    log('Opening widget...');
-                    
-                    // Use setTimeout to ensure modal is rendered before opening widget
-                    setTimeout(function() {
-                        try {
-                            // Set parameters for the widget
-                            const params = {
-                                containerSelector: '#widget-container',
-                                defaultFilters: {
-                                    categoryPath: ["Electrical", "Conduit"]
-                                },
-                                onOpen: function() {
-                                    log('Widget opened successfully');
-                                    loader.style.display = 'none';
-                                },
-                                onClose: function() {
-                                    log('Widget closed');
-                                },
-                                onError: function(error) {
-                                    log('Widget error: ' + JSON.stringify(error));
-                                    loader.style.display = 'none';
-                                }
-                            };
-                            
-                            // Open the widget with the specified parameters
-                            window.onebuild.open(params);
-                        } catch (err) {
-                            log('Error opening widget: ' + err.message);
-                            loader.style.display = 'none';
+            // Open new window
+            const newWindow = window.open('', '1BuildWidget', features);
+            
+            // Write content to the new window
+            newWindow.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>1Build Product Catalog</title>
+                    <style>
+                        body {
+                            margin: 0;
+                            padding: 0;
+                            overflow: hidden;
+                            font-family: Arial, sans-serif;
                         }
-                    }, 500);
-                } else {
-                    log('onebuild object not defined');
-                    loader.style.display = 'none';
-                }
-            } catch (err) {
-                log('Error in click handler: ' + err.message);
-                loader.style.display = 'none';
-            }
-        });
-        
-        // Close modal when close button is clicked
-        closeModalBtn.addEventListener('click', function() {
-            modalOverlay.style.display = 'none';
+                        
+                        .header {
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: center;
+                            padding: 10px 15px;
+                            background-color: #f5f5f5;
+                            border-bottom: 1px solid #ddd;
+                        }
+                        
+                        .title {
+                            font-weight: bold;
+                            margin: 0;
+                        }
+                        
+                        .close-btn {
+                            background: #0066cc;
+                            color: white;
+                            border: none;
+                            padding: 5px 10px;
+                            border-radius: 4px;
+                            cursor: pointer;
+                        }
+                        
+                        .content {
+                            height: calc(100vh - 50px);
+                            position: relative;
+                        }
+                        
+                        .loader {
+                            position: absolute;
+                            top: 50%;
+                            left: 50%;
+                            transform: translate(-50%, -50%);
+                            text-align: center;
+                        }
+                        
+                        .spinner {
+                            border: 5px solid #f3f3f3;
+                            border-top: 5px solid #0066cc;
+                            border-radius: 50%;
+                            width: 40px;
+                            height: 40px;
+                            animation: spin 1s linear infinite;
+                            margin: 0 auto 15px;
+                        }
+                        
+                        @keyframes spin {
+                            0% { transform: rotate(0deg); }
+                            100% { transform: rotate(360deg); }
+                        }
+                        
+                        /* Hide Add to Project button */
+                        button[data-testid="add-to-project-button"],
+                        button[aria-label="Add to Project"],
+                        button:has(span:contains("Add to Project")),
+                        [data-testid="button-add-to-project"] {
+                            display: none !important;
+                            visibility: hidden !important;
+                            opacity: 0 !important;
+                            pointer-events: none !important;
+                        }
+                    </style>
+                    
+                    <!-- Add additional dynamic style to hide the button once the DOM loads -->
+                    <script>
+                        // Function to add CSS to hide the button
+                        function addButtonHidingCSS() {
+                            const style = document.createElement('style');
+                            style.textContent = \`
+                                /* Target various possible button selectors */
+                                button[data-testid="add-to-project-button"],
+                                button[aria-label="Add to Project"],
+                                [data-testid="button-add-to-project"],
+                                button.MuiButton-containedPrimary {
+                                    display: none !important;
+                                    visibility: hidden !important;
+                                }
+                                
+                                /* Try to find by text content */
+                                button:has(span:contains("Add to Project")),
+                                button:has(span:contains("project")) {
+                                    display: none !important;
+                                }
+                            \`;
+                            document.head.appendChild(style);
+                        }
+                        
+                        // Apply CSS when DOM loads
+                        document.addEventListener('DOMContentLoaded', addButtonHidingCSS);
+                        
+                        // Also run periodically to catch dynamically added elements
+                        setInterval(function() {
+                            // Find buttons with text "Add to Project"
+                            document.querySelectorAll('button').forEach(function(button) {
+                                if (button.textContent.includes('Add to Project') || 
+                                    button.textContent.includes('project')) {
+                                    button.style.display = 'none';
+                                }
+                            });
+                        }, 1000);
+                    <\/script>
+                </head>
+                <body>
+                    <div class="header">
+                        <h2 class="title">1Build Electrical Products</h2>
+                        <button class="close-btn" onclick="window.close()">Close</button>
+                    </div>
+                    
+                    <div class="content">
+                        <div class="loader" id="loader">
+                            <div class="spinner"></div>
+                            <p>Loading 1Build catalog...</p>
+                        </div>
+                    </div>
+                    
+                    <script src="https://cdn.1build.com/widget.js"><\/script>
+                    <script>
+                        // Hide loader when widget is initialized
+                        function hideLoader() {
+                            document.getElementById('loader').style.display = 'none';
+                        }
+                        
+                        // Initialize and open widget when page loads
+                        window.onload = function() {
+                            if (typeof window.onebuild !== 'undefined') {
+                                try {
+                                    window.onebuild.init({
+                                        key: "1build_emb.rZw252g8.0exOSkoCXcY1wuFJCcC84spIVVqKq8Us",
+                                        onLoad: function() {
+                                            console.log('Widget initialized');
+                                            
+                                            // Open widget with parameters
+                                            window.onebuild.open({
+                                                containerSelector: '.content',
+                                                defaultFilters: {
+                                                    categoryPath: ["Electrical", "Conduit"]
+                                                },
+                                                onOpen: hideLoader,
+                                                onError: function(error) {
+                                                    console.error('Widget error:', error);
+                                                    document.getElementById('loader').innerHTML = 
+                                                        '<p style="color: red;">Error loading catalog. Please try again.</p>';
+                                                }
+                                            });
+                                            
+                                            // Try to hide Add to Project button
+                                            setTimeout(function() {
+                                                // Apply CSS to hide the button
+                                                const style = document.createElement('style');
+                                                style.textContent = \`
+                                                    button[data-testid="add-to-project-button"],
+                                                    button[aria-label="Add to Project"],
+                                                    button:has(span:contains("Add to Project")) {
+                                                        display: none !important;
+                                                    }
+                                                \`;
+                                                document.head.appendChild(style);
+                                            }, 2000);
+                                        }
+                                    });
+                                } catch (err) {
+                                    console.error('Error initializing widget:', err);
+                                    document.getElementById('loader').innerHTML = 
+                                        '<p style="color: red;">Error loading catalog. Please try again.</p>';
+                                }
+                            } else {
+                                console.error('onebuild not defined');
+                                document.getElementById('loader').innerHTML = 
+                                    '<p style="color: red;">Error loading catalog. Please try again.</p>';
+                            }
+                        };
+                    <\/script>
+                </body>
+                </html>
+            `);
             
-            // Close the widget if it's open
-            try {
-                if (typeof window.onebuild !== 'undefined') {
-                    window.onebuild.close();
-                }
-            } catch (err) {
-                log('Error closing widget: ' + err.message);
-            }
-        });
-        
-        // Close modal when clicking outside the content
-        modalOverlay.addEventListener('click', function(e) {
-            if (e.target === modalOverlay) {
-                closeModalBtn.click();
-            }
-        });
+            // Close the document to finish writing
+            newWindow.document.close();
+        }
     </script>
 </body>
 </html>
