@@ -4,9 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>1Build Electrical Products</title>
-    <!-- Add Glide-specific meta tags -->
-    <meta name="referrer" content="no-referrer">
-    <meta http-equiv="Content-Security-Policy" content="frame-ancestors *">
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -29,7 +26,7 @@
             margin-top: 0;
         }
         
-        /* Updated button styling to black with white text */
+        /* Black button with white text */
         button {
             background-color: #000000;
             color: white;
@@ -45,12 +42,6 @@
         
         button:hover {
             background-color: #333333;
-        }
-        
-        button:disabled {
-            background-color: #333333;
-            opacity: 0.7;
-            cursor: not-allowed;
         }
         
         #debug-info {
@@ -71,16 +62,16 @@
         <h1>1Build Electrical Products</h1>
         <p>Browse electrical conduit products and pricing from 1Build</p>
         
-        <button id="open-widget-btn">Open Catalogue</button>
+        <button id="open-catalog-btn">Open Catalogue</button>
         
         <div id="debug-info"></div>
     </div>
     
     <script>
         const debugInfo = document.getElementById('debug-info');
-        const openWidgetBtn = document.getElementById('open-widget-btn');
+        const openCatalogBtn = document.getElementById('open-catalog-btn');
         
-        // Enable debug info for troubleshooting in Glide
+        // Enable debug info for troubleshooting
         const DEBUG_ENABLED = true;
         
         function log(message) {
@@ -92,242 +83,35 @@
             }
         }
         
-        log("Starting widget initialization...");
-        
-        // For Glide compatibility, we'll use the window.open approach
-        openWidgetBtn.addEventListener('click', function() {
+        // Open 1build widget URL with API key
+        openCatalogBtn.addEventListener('click', function() {
             try {
-                log("Button clicked, opening widget in new window...");
+                log("Button clicked, opening 1Build widget...");
                 
-                // Calculate window size
-                const width = Math.min(800, window.innerWidth - 40);
-                const height = Math.min(700, window.innerHeight - 60);
+                // Create widget URL with API key and parameters
+                const apiKey = "1build_emb.rZw252g8.0exOSkoCXcY1wuFJCcC84spIVVqKq8Us";
                 
-                // Calculate position for center of screen
-                const left = (window.innerWidth - width) / 2;
-                const top = (window.innerHeight - height) / 2;
+                // Use the widget URL format
+                const widgetUrl = `https://app.1build.com/widget?key=${encodeURIComponent(apiKey)}&mode=embed&category=Electrical/Conduit`;
                 
-                // Open the 1build widget in a new window
-                const newWindow = window.open('', '1BuildWidget', `width=${width},height=${height},left=${left},top=${top}`);
+                // Open in a new window with specific dimensions
+                const width = Math.min(1000, window.innerWidth - 40);
+                const height = Math.min(800, window.innerHeight - 60);
+                const windowFeatures = `width=${width},height=${height},resizable=yes,scrollbars=yes,status=no,location=no`;
+                
+                const newWindow = window.open(widgetUrl, "1BuildWidget", windowFeatures);
                 
                 if (!newWindow) {
                     log("Popup blocked! Please allow popups for this site.");
-                    return;
+                } else {
+                    log("Widget opened in new window");
                 }
-                
-                // Write the widget HTML to the new window
-                newWindow.document.write(`
-                    <!DOCTYPE html>
-                    <html>
-                    <head>
-                        <meta charset="UTF-8">
-                        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                        <title>1Build Catalog</title>
-                        <style>
-                            body {
-                                margin: 0;
-                                padding: 0;
-                                overflow: hidden;
-                                font-family: Arial, sans-serif;
-                            }
-                            
-                            .header {
-                                display: flex;
-                                justify-content: space-between;
-                                align-items: center;
-                                padding: 10px 15px;
-                                background-color: #000;
-                                color: white;
-                            }
-                            
-                            .close-btn {
-                                background: none;
-                                border: none;
-                                color: white;
-                                font-size: 16px;
-                                cursor: pointer;
-                                padding: 5px 10px;
-                            }
-                            
-                            .content {
-                                height: calc(100vh - 50px);
-                                position: relative;
-                            }
-                            
-                            .loader {
-                                position: absolute;
-                                top: 50%;
-                                left: 50%;
-                                transform: translate(-50%, -50%);
-                                text-align: center;
-                            }
-                            
-                            .spinner {
-                                border: 5px solid #f3f3f3;
-                                border-top: 5px solid #000;
-                                border-radius: 50%;
-                                width: 40px;
-                                height: 40px;
-                                animation: spin 1s linear infinite;
-                                margin: 0 auto 15px;
-                            }
-                            
-                            @keyframes spin {
-                                0% { transform: rotate(0deg); }
-                                100% { transform: rotate(360deg); }
-                            }
-                            
-                            /* Hide Add to Project button */
-                            button[data-testid="add-to-project-button"],
-                            [data-testid="add-to-project-button"],
-                            [aria-label="Add to Project"],
-                            button.MuiButton-containedPrimary,
-                            .MuiBox-root button[class*="MuiButton-containedPrimary"],
-                            a[href*="project"],
-                            .MuiButtonBase-root[href*="project"] {
-                                display: none !important;
-                                visibility: hidden !important;
-                                opacity: 0 !important;
-                                position: absolute !important;
-                                pointer-events: none !important;
-                            }
-                        </style>
-                    </head>
-                    <body>
-                        <div class="header">
-                            <h2 style="margin: 0; font-size: 18px;">1Build Electrical Products</h2>
-                            <button class="close-btn" onclick="window.close()">Close</button>
-                        </div>
-                        
-                        <div class="content">
-                            <div class="loader" id="loader">
-                                <div class="spinner"></div>
-                                <p>Loading 1Build catalog...</p>
-                            </div>
-                        </div>
-                        
-                        <script src="https://cdn.1build.com/widget.js"><\/script>
-                        <script>
-                            // Log for debugging
-                            function log(msg) {
-                                console.log(msg);
-                            }
-                            
-                            // Hide the loader when widget is loaded
-                            function hideLoader() {
-                                document.getElementById('loader').style.display = 'none';
-                            }
-                            
-                            // Function to inject CSS to hide Add to Project button
-                            function hideProjectButton() {
-                                try {
-                                    // Create style element
-                                    const style = document.createElement('style');
-                                    style.textContent = \`
-                                        button[data-testid="add-to-project-button"],
-                                        [data-testid="add-to-project-button"],
-                                        [aria-label="Add to Project"],
-                                        button.MuiButton-containedPrimary,
-                                        a[href*="project"],
-                                        div[role="dialog"] button,
-                                        button:has(span:contains("Add to Project")) {
-                                            display: none !important;
-                                            visibility: hidden !important;
-                                            opacity: 0 !important;
-                                            position: absolute !important;
-                                            pointer-events: none !important;
-                                        }
-                                    \`;
-                                    document.head.appendChild(style);
-                                    
-                                    // Also try to find and hide buttons by text
-                                    setInterval(function() {
-                                        const buttons = document.querySelectorAll('button');
-                                        buttons.forEach(button => {
-                                            if (button.textContent.includes('Add to Project') || 
-                                                button.textContent.includes('project')) {
-                                                button.style.display = 'none';
-                                            }
-                                        });
-                                    }, 1000);
-                                } catch (e) {
-                                    log('Error hiding project button: ' + e.message);
-                                }
-                            }
-                            
-                            // Initialize widget when page loads
-                            window.onload = function() {
-                                log('Window loaded, initializing widget...');
-                                
-                                // Add a delay to ensure DOM is ready
-                                setTimeout(function() {
-                                    try {
-                                        if (typeof window.onebuild !== 'undefined') {
-                                            // Initialize widget
-                                            window.onebuild.init({
-                                                key: "1build_emb.rZw252g8.0exOSkoCXcY1wuFJCcC84spIVVqKq8Us",
-                                                onLoad: function() {
-                                                    log('Widget initialized');
-                                                    
-                                                    // Apply CSS to hide Add to Project button
-                                                    hideProjectButton();
-                                                    
-                                                    // Open widget
-                                                    window.onebuild.open({
-                                                        defaultFilters: {
-                                                            categoryPath: ["Electrical", "Conduit"]
-                                                        },
-                                                        onOpen: function() {
-                                                            hideLoader();
-                                                            hideProjectButton();
-                                                        },
-                                                        onError: function(error) {
-                                                            log('Widget error: ' + JSON.stringify(error));
-                                                            document.getElementById('loader').innerHTML = 
-                                                                '<p style="color: red;">Error loading catalog. Please try again.</p>';
-                                                        }
-                                                    });
-                                                },
-                                                onError: function(error) {
-                                                    log('Initialization error: ' + JSON.stringify(error));
-                                                    document.getElementById('loader').innerHTML = 
-                                                        '<p style="color: red;">Error initializing widget. Please try again.</p>';
-                                                }
-                                            });
-                                        } else {
-                                            log('onebuild object not defined');
-                                            document.getElementById('loader').innerHTML = 
-                                                '<p style="color: red;">Error loading widget. Please try again.</p>';
-                                                
-                                            // Try to load the script again
-                                            const script = document.createElement('script');
-                                            script.src = 'https://cdn.1build.com/widget.js';
-                                            document.body.appendChild(script);
-                                        }
-                                    } catch (e) {
-                                        log('Error: ' + e.message);
-                                        document.getElementById('loader').innerHTML = 
-                                            '<p style="color: red;">Error initializing widget. Please try again.</p>';
-                                    }
-                                }, 500);
-                            };
-                        <\/script>
-                    </body>
-                    </html>
-                `);
-                
-                newWindow.document.close();
-                log("New window opened with widget");
-                
             } catch (err) {
                 log("Error opening widget: " + err.message);
             }
         });
         
-        // No need for the complex widget initialization in the main page anymore
-        // since we're opening it in a new window
         log("Ready to open 1Build widget in a new window");
-        openWidgetBtn.disabled = false;
     </script>
 </body>
 </html>
