@@ -21,11 +21,6 @@
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
         
-        h1 {
-            color: #333;
-            margin-top: 0;
-        }
-        
         button {
             background-color: #0066cc;
             color: white;
@@ -34,20 +29,6 @@
             border-radius: 4px;
             cursor: pointer;
             font-size: 16px;
-            margin: 20px 0;
-        }
-        
-        button:hover {
-            background-color: #0055aa;
-        }
-        
-        #debug-info {
-            margin-top: 20px;
-            padding: 10px;
-            background-color: #f8f8f8;
-            border: 1px solid #ddd;
-            font-family: monospace;
-            white-space: pre-wrap;
         }
     </style>
 </head>
@@ -56,111 +37,52 @@
         <h1>1Build Electrical Products</h1>
         <p>Browse electrical conduit products and pricing from 1Build</p>
         
-        <button id="open-widget-btn" disabled>Loading widget...</button>
-        
-        <div id="debug-info"></div>
+        <button onclick="openInFullWindow()">Open 1Build Catalog</button>
     </div>
     
-    <!-- We'll load the script dynamically -->
     <script>
-        const debugInfo = document.getElementById('debug-info');
-        const openWidgetBtn = document.getElementById('open-widget-btn');
-        
-        function log(message) {
-            console.log(message);
-            debugInfo.textContent += message + '\n';
-        }
-        
-        log("Starting widget initialization...");
-        
-        // 1. First, check if the browser can access the 1build CDN directly
-        fetch('https://cdn.1build.com/widget.js', { method: 'HEAD' })
-            .then(response => {
-                if (response.ok) {
-                    log("CDN accessible, proceeding with script load...");
-                    loadWidgetScript();
-                } else {
-                    log(`CDN request failed with status: ${response.status}`);
-                    fallbackToLocalProxy();
-                }
-            })
-            .catch(error => {
-                log(`CDN access error: ${error.message}`);
-                fallbackToLocalProxy();
-            });
-        
-        function loadWidgetScript() {
-            // Create script tag and add to document
-            const script = document.createElement('script');
-            script.src = 'https://cdn.1build.com/widget.js';
+        // This function will open a new full window with the widget
+        function openInFullWindow() {
+            // Create a new window
+            const newWindow = window.open('', '_blank', 'width=1000,height=800');
             
-            script.onload = function() {
-                log("Script loaded successfully!");
-                initializeWidget();
-            };
-            
-            script.onerror = function() {
-                log("Error loading script from CDN.");
-                fallbackToLocalProxy();
-            };
-            
-            document.body.appendChild(script);
-        }
-        
-        function fallbackToLocalProxy() {
-            log("Attempting to use a CORS proxy...");
-            const script = document.createElement('script');
-            script.src = 'https://api.allorigins.win/raw?url=https://cdn.1build.com/widget.js';
-            
-            script.onload = function() {
-                log("Script loaded via proxy!");
-                initializeWidget();
-            };
-            
-            script.onerror = function() {
-                log("Failed to load script via proxy. Please check console for additional errors.");
-                openWidgetBtn.textContent = "Widget Failed to Load";
-            };
-            
-            document.body.appendChild(script);
-        }
-        
-        function initializeWidget() {
-            // Wait for the window.onebuild object to be defined
-            const checkInterval = setInterval(function() {
-                if (window.onebuild) {
-                    clearInterval(checkInterval);
-                    log("onebuild object found, initializing...");
+            // Write the content to the new window
+            newWindow.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>1Build Widget</title>
+                    <style>
+                        body { margin: 0; padding: 0; font-family: Arial, sans-serif; }
+                        .close-btn { position: fixed; top: 10px; right: 10px; background: #333; color: white; border: none; padding: 5px 10px; cursor: pointer; border-radius: 4px; }
+                    </style>
+                </head>
+                <body>
+                    <button class="close-btn" onclick="window.close()">Close</button>
                     
-                    try {
-                        window.onebuild.init({
-                            key: "1build_emb.rZw252g8.0exOSkoCXcY1wuFJCcC84spIVVqKq8Us" // Replace with your actual EMBEDDED key
-                        });
-                        
-                        log("Widget initialized successfully!");
-                        openWidgetBtn.disabled = false;
-                        openWidgetBtn.textContent = "Open 1Build Catalog";
-                        
-                        openWidgetBtn.addEventListener('click', function() {
-                            log("Opening widget...");
-                            window.onebuild.open();
-                        });
-                        
-                    } catch (err) {
-                        log(`Initialization error: ${err.message}`);
-                        openWidgetBtn.textContent = "Widget Error";
-                    }
-                }
-            }, 100);
-            
-            // Timeout after 5 seconds
-            setTimeout(function() {
-                clearInterval(checkInterval);
-                if (!window.onebuild) {
-                    log("Timeout waiting for onebuild object. Script may have loaded but onebuild object is not available.");
-                    openWidgetBtn.textContent = "Widget Unavailable";
-                }
-            }, 5000);
+                    <script src="https://cdn.1build.com/widget.js"><\/script>
+                    <script>
+                        // Initialize and open the widget
+                        window.onload = function() {
+                            if (window.onebuild) {
+                                window.onebuild.init({
+                                    key: "1build_emb.rZw252g8.0exOSkoCXcY1wuFJCcC84spIVVqKq8Us" // Your embedded API key
+                                });
+                                
+                                setTimeout(function() {
+                                    window.onebuild.open();
+                                }, 500);
+                            } else {
+                                alert("1Build widget failed to load");
+                            }
+                        };
+                    <\/script>
+                </body>
+                </html>
+            `);
+            newWindow.document.close();
         }
     </script>
 </body>
