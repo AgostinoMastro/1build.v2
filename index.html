@@ -4,12 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>1Build Electrical Products</title>
+    <!-- Add Glide-specific meta tags -->
+    <meta name="referrer" content="no-referrer">
+    <meta http-equiv="Content-Security-Policy" content="frame-ancestors *">
     <style>
         body {
             font-family: Arial, sans-serif;
             margin: 0;
             padding: 20px;
-            background-color: #f5f5f5;
+            background-color: transparent;
         }
         
         .container {
@@ -57,6 +60,9 @@
             border: 1px solid #ddd;
             font-family: monospace;
             white-space: pre-wrap;
+            font-size: 12px;
+            max-height: 150px;
+            overflow-y: auto;
         }
     </style>
 </head>
@@ -65,112 +71,263 @@
         <h1>1Build Electrical Products</h1>
         <p>Browse electrical conduit products and pricing from 1Build</p>
         
-        <button id="open-widget-btn" disabled>Loading widget...</button>
+        <button id="open-widget-btn">Open Catalogue</button>
         
         <div id="debug-info"></div>
     </div>
     
-    <!-- We'll load the script dynamically -->
     <script>
         const debugInfo = document.getElementById('debug-info');
         const openWidgetBtn = document.getElementById('open-widget-btn');
         
+        // Enable debug info for troubleshooting in Glide
+        const DEBUG_ENABLED = true;
+        
         function log(message) {
             console.log(message);
-            debugInfo.textContent += message + '\n';
+            if (DEBUG_ENABLED) {
+                debugInfo.style.display = 'block';
+                debugInfo.textContent += message + '\n';
+                debugInfo.scrollTop = debugInfo.scrollHeight;
+            }
         }
         
         log("Starting widget initialization...");
         
-        // 1. First, check if the browser can access the 1build CDN directly
-        fetch('https://cdn.1build.com/widget.js', { method: 'HEAD' })
-            .then(response => {
-                if (response.ok) {
-                    log("CDN accessible, proceeding with script load...");
-                    loadWidgetScript();
-                } else {
-                    log(`CDN request failed with status: ${response.status}`);
-                    fallbackToLocalProxy();
+        // For Glide compatibility, we'll use the window.open approach
+        openWidgetBtn.addEventListener('click', function() {
+            try {
+                log("Button clicked, opening widget in new window...");
+                
+                // Calculate window size
+                const width = Math.min(800, window.innerWidth - 40);
+                const height = Math.min(700, window.innerHeight - 60);
+                
+                // Calculate position for center of screen
+                const left = (window.innerWidth - width) / 2;
+                const top = (window.innerHeight - height) / 2;
+                
+                // Open the 1build widget in a new window
+                const newWindow = window.open('', '1BuildWidget', `width=${width},height=${height},left=${left},top=${top}`);
+                
+                if (!newWindow) {
+                    log("Popup blocked! Please allow popups for this site.");
+                    return;
                 }
-            })
-            .catch(error => {
-                log(`CDN access error: ${error.message}`);
-                fallbackToLocalProxy();
-            });
-        
-        function loadWidgetScript() {
-            // Create script tag and add to document
-            const script = document.createElement('script');
-            script.src = 'https://cdn.1build.com/widget.js';
-            
-            script.onload = function() {
-                log("Script loaded successfully!");
-                initializeWidget();
-            };
-            
-            script.onerror = function() {
-                log("Error loading script from CDN.");
-                fallbackToLocalProxy();
-            };
-            
-            document.body.appendChild(script);
-        }
-        
-        function fallbackToLocalProxy() {
-            log("Attempting to use a CORS proxy...");
-            const script = document.createElement('script');
-            script.src = 'https://api.allorigins.win/raw?url=https://cdn.1build.com/widget.js';
-            
-            script.onload = function() {
-                log("Script loaded via proxy!");
-                initializeWidget();
-            };
-            
-            script.onerror = function() {
-                log("Failed to load script via proxy. Please check console for additional errors.");
-                openWidgetBtn.textContent = "Widget Failed to Load";
-            };
-            
-            document.body.appendChild(script);
-        }
-        
-        function initializeWidget() {
-            // Wait for the window.onebuild object to be defined
-            const checkInterval = setInterval(function() {
-                if (window.onebuild) {
-                    clearInterval(checkInterval);
-                    log("onebuild object found, initializing...");
-                    
-                    try {
-                        window.onebuild.init({
-                            key: "1build_emb.rZw252g8.0exOSkoCXcY1wuFJCcC84spIVVqKq8Us" // Replace with your actual EMBEDDED key
-                        });
+                
+                // Write the widget HTML to the new window
+                newWindow.document.write(`
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <meta charset="UTF-8">
+                        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                        <title>1Build Catalog</title>
+                        <style>
+                            body {
+                                margin: 0;
+                                padding: 0;
+                                overflow: hidden;
+                                font-family: Arial, sans-serif;
+                            }
+                            
+                            .header {
+                                display: flex;
+                                justify-content: space-between;
+                                align-items: center;
+                                padding: 10px 15px;
+                                background-color: #000;
+                                color: white;
+                            }
+                            
+                            .close-btn {
+                                background: none;
+                                border: none;
+                                color: white;
+                                font-size: 16px;
+                                cursor: pointer;
+                                padding: 5px 10px;
+                            }
+                            
+                            .content {
+                                height: calc(100vh - 50px);
+                                position: relative;
+                            }
+                            
+                            .loader {
+                                position: absolute;
+                                top: 50%;
+                                left: 50%;
+                                transform: translate(-50%, -50%);
+                                text-align: center;
+                            }
+                            
+                            .spinner {
+                                border: 5px solid #f3f3f3;
+                                border-top: 5px solid #000;
+                                border-radius: 50%;
+                                width: 40px;
+                                height: 40px;
+                                animation: spin 1s linear infinite;
+                                margin: 0 auto 15px;
+                            }
+                            
+                            @keyframes spin {
+                                0% { transform: rotate(0deg); }
+                                100% { transform: rotate(360deg); }
+                            }
+                            
+                            /* Hide Add to Project button */
+                            button[data-testid="add-to-project-button"],
+                            [data-testid="add-to-project-button"],
+                            [aria-label="Add to Project"],
+                            button.MuiButton-containedPrimary,
+                            .MuiBox-root button[class*="MuiButton-containedPrimary"],
+                            a[href*="project"],
+                            .MuiButtonBase-root[href*="project"] {
+                                display: none !important;
+                                visibility: hidden !important;
+                                opacity: 0 !important;
+                                position: absolute !important;
+                                pointer-events: none !important;
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        <div class="header">
+                            <h2 style="margin: 0; font-size: 18px;">1Build Electrical Products</h2>
+                            <button class="close-btn" onclick="window.close()">Close</button>
+                        </div>
                         
-                        log("Widget initialized successfully!");
-                        openWidgetBtn.disabled = false;
-                        openWidgetBtn.textContent = "Open Catalogue"; // Changed to "Open Catalogue" with British spelling
+                        <div class="content">
+                            <div class="loader" id="loader">
+                                <div class="spinner"></div>
+                                <p>Loading 1Build catalog...</p>
+                            </div>
+                        </div>
                         
-                        openWidgetBtn.addEventListener('click', function() {
-                            log("Opening widget...");
-                            window.onebuild.open();
-                        });
-                        
-                    } catch (err) {
-                        log(`Initialization error: ${err.message}`);
-                        openWidgetBtn.textContent = "Widget Error";
-                    }
-                }
-            }, 100);
-            
-            // Timeout after 5 seconds
-            setTimeout(function() {
-                clearInterval(checkInterval);
-                if (!window.onebuild) {
-                    log("Timeout waiting for onebuild object. Script may have loaded but onebuild object is not available.");
-                    openWidgetBtn.textContent = "Widget Unavailable";
-                }
-            }, 5000);
-        }
+                        <script src="https://cdn.1build.com/widget.js"><\/script>
+                        <script>
+                            // Log for debugging
+                            function log(msg) {
+                                console.log(msg);
+                            }
+                            
+                            // Hide the loader when widget is loaded
+                            function hideLoader() {
+                                document.getElementById('loader').style.display = 'none';
+                            }
+                            
+                            // Function to inject CSS to hide Add to Project button
+                            function hideProjectButton() {
+                                try {
+                                    // Create style element
+                                    const style = document.createElement('style');
+                                    style.textContent = \`
+                                        button[data-testid="add-to-project-button"],
+                                        [data-testid="add-to-project-button"],
+                                        [aria-label="Add to Project"],
+                                        button.MuiButton-containedPrimary,
+                                        a[href*="project"],
+                                        div[role="dialog"] button,
+                                        button:has(span:contains("Add to Project")) {
+                                            display: none !important;
+                                            visibility: hidden !important;
+                                            opacity: 0 !important;
+                                            position: absolute !important;
+                                            pointer-events: none !important;
+                                        }
+                                    \`;
+                                    document.head.appendChild(style);
+                                    
+                                    // Also try to find and hide buttons by text
+                                    setInterval(function() {
+                                        const buttons = document.querySelectorAll('button');
+                                        buttons.forEach(button => {
+                                            if (button.textContent.includes('Add to Project') || 
+                                                button.textContent.includes('project')) {
+                                                button.style.display = 'none';
+                                            }
+                                        });
+                                    }, 1000);
+                                } catch (e) {
+                                    log('Error hiding project button: ' + e.message);
+                                }
+                            }
+                            
+                            // Initialize widget when page loads
+                            window.onload = function() {
+                                log('Window loaded, initializing widget...');
+                                
+                                // Add a delay to ensure DOM is ready
+                                setTimeout(function() {
+                                    try {
+                                        if (typeof window.onebuild !== 'undefined') {
+                                            // Initialize widget
+                                            window.onebuild.init({
+                                                key: "1build_emb.rZw252g8.0exOSkoCXcY1wuFJCcC84spIVVqKq8Us",
+                                                onLoad: function() {
+                                                    log('Widget initialized');
+                                                    
+                                                    // Apply CSS to hide Add to Project button
+                                                    hideProjectButton();
+                                                    
+                                                    // Open widget
+                                                    window.onebuild.open({
+                                                        defaultFilters: {
+                                                            categoryPath: ["Electrical", "Conduit"]
+                                                        },
+                                                        onOpen: function() {
+                                                            hideLoader();
+                                                            hideProjectButton();
+                                                        },
+                                                        onError: function(error) {
+                                                            log('Widget error: ' + JSON.stringify(error));
+                                                            document.getElementById('loader').innerHTML = 
+                                                                '<p style="color: red;">Error loading catalog. Please try again.</p>';
+                                                        }
+                                                    });
+                                                },
+                                                onError: function(error) {
+                                                    log('Initialization error: ' + JSON.stringify(error));
+                                                    document.getElementById('loader').innerHTML = 
+                                                        '<p style="color: red;">Error initializing widget. Please try again.</p>';
+                                                }
+                                            });
+                                        } else {
+                                            log('onebuild object not defined');
+                                            document.getElementById('loader').innerHTML = 
+                                                '<p style="color: red;">Error loading widget. Please try again.</p>';
+                                                
+                                            // Try to load the script again
+                                            const script = document.createElement('script');
+                                            script.src = 'https://cdn.1build.com/widget.js';
+                                            document.body.appendChild(script);
+                                        }
+                                    } catch (e) {
+                                        log('Error: ' + e.message);
+                                        document.getElementById('loader').innerHTML = 
+                                            '<p style="color: red;">Error initializing widget. Please try again.</p>';
+                                    }
+                                }, 500);
+                            };
+                        <\/script>
+                    </body>
+                    </html>
+                `);
+                
+                newWindow.document.close();
+                log("New window opened with widget");
+                
+            } catch (err) {
+                log("Error opening widget: " + err.message);
+            }
+        });
+        
+        // No need for the complex widget initialization in the main page anymore
+        // since we're opening it in a new window
+        log("Ready to open 1Build widget in a new window");
+        openWidgetBtn.disabled = false;
     </script>
 </body>
 </html>
